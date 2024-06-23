@@ -17,6 +17,7 @@ const TrainData = () => {
 
   const handleSubmit = async () => {
   const imagesFormData = new FormData();
+  imagesFormData.append('name',name)
   images.forEach((image, index) => {
     const byteString = atob(image.split(',')[1]);
     const mimeString = image.split(',')[0].split(':')[1].split(';')[0];
@@ -28,6 +29,7 @@ const TrainData = () => {
     const file = new Blob([arrayBuffer], { type: mimeString });
     imagesFormData.append('images', file, `${index + 1}.jpg`);
   });
+  
 
   const dataFormData = new FormData();
   dataFormData.append('name', name);

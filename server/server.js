@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require("express");
 const mysql = require("mysql2");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -10,10 +10,11 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
+// MySQL Connection
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "",
+  password: "1234",
   database: "face_detection",
 });
 
@@ -25,7 +26,7 @@ db.connect((err) => {
   console.log("Connected to database.");
 });
 
-// Configure multer for file uploads
+// Multer configuration for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = `src/labeled_images/${req.body.name}`;
@@ -35,7 +36,7 @@ const storage = multer.diskStorage({
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    const dir = `fsrc/labeled_images/${req.body.name}`;
+    const dir = `src/labeled_images/${req.body.name}`;
     fs.readdir(dir, (err, files) => {
       if (err) {
         cb(err);
@@ -91,30 +92,31 @@ app.post("/api/detect", (req, res) => {
 
 // POST endpoint to upload images
 app.post("/api/upload", upload.array("images", 12), (req, res) => {
-  res.send("Images uploaded successfully.");
+  const { name } = req.body;
+  console.log("name: ", name);
+
+  res.send(`Images uploaded successfully for ${name}.`);
+});
+
+// Endpoint to handle form submission (uploadTrainData)
+app.post("/api/uploadTrainData", upload.array("images", 10), (req, res) => {
+  const { name, id, section, type } = req.body;
+
+  // Insert data into MySQL
+  const sql =
+    "INSERT INTO traindata (name, id, section, type) VALUES (?, ?, ?, ?)";
+  db.query(sql, [name, id, section, type], (err, result) => {
+    if (err) {
+      console.error("Error inserting data into MySQL:", err);
+      res.status(500).send("Error uploading data");
+    } else {
+      console.log("Data inserted into MySQL:", result);
+      res.send("Data uploaded successfully");
+    }
+  });
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});
-
-
-// Endpoint to handle form submission
-app.post('/api/uploadTrainData', upload.array('images', 10), (req, res) => {
-  const { name, id, section, type } = req.body;
- 
-
-  // Insert data into MySQL
-  const sql = 'INSERT INTO traindata (name, id, section, type) VALUES (?, ?, ?, ?)';
-  db.query(sql, [name, id, section, type], (err, result) => {
-    if (err) {
-      console.error('Error inserting data into MySQL:', err);
-      res.status(500).send('Error uploading data');
-    } else {
-      console.log('Data inserted into MySQL:', result);
-
-     
-    }
-  });
 });
