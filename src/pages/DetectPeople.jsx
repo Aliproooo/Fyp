@@ -2,7 +2,6 @@ import { useRef, useEffect, useState } from 'react';
 import '../../src/App.css';
 import * as faceapi from 'face-api.js';
 import axios from 'axios';
-import { formControlLabelClasses } from '@mui/material';
 
 function DetectPeople() {
   const videoRef = useRef();
@@ -10,18 +9,24 @@ function DetectPeople() {
   const [detectedName, setDetectedName] = useState('');
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
-  const [nameStored, setNameStored] = useState(false);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-
 
   useEffect(() => {
     loadModels();
     startVideo();
 
-    // Cleanup function to remove event listeners and intervals
     return () => {
+      clearCanvas();
       window.removeEventListener('resize', handleResize);
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.src = '';
+      }
+      if (canvasRef.current) {
+        const context = canvasRef.current.getContext('2d');
+        context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
     };
   }, []);
 
@@ -34,16 +39,21 @@ function DetectPeople() {
 
   const startVideo = () => {
     if (videoRef.current) {
-      videoRef.current.src = "/src/khuzaima.mp4";
-      videoRef.current.onloadedmetadata = () => {
-        setVideoLoaded(true);
-      };
-      videoRef.current.onerror = (e) => {
-        setError(`Error loading video: ${e.target.error.message}`);
-      };
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play();
+            setVideoLoaded(true);
+          };
+        })
+        .catch((error) => {
+          setError(`Error accessing webcam: ${error.message}`);
+        });
     }
     window.addEventListener('resize', handleResize);
   };
+  
 
   const loadModels = () => {
     Promise.all([
@@ -79,57 +89,51 @@ function DetectPeople() {
 
     const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.7);
 
-    videoRef.current.addEventListener('play', () => {
+    const detectInterval = setInterval(async () => {
+      const videoElement = videoRef.current;
+      if (!videoElement || !modelsLoaded || !videoLoaded) {
+        return;
+      }
+
+      const detections = await faceapi.detectAllFaces(videoElement, new faceapi.SsdMobilenetv1Options()).withFaceLandmarks().withFaceDescriptors();
+      const displaySize = { width: videoElement.videoWidth, height: videoElement.videoHeight };
+      const resizedDetections = faceapi.resizeResults(detections, displaySize);
       const canvas = canvasRef.current;
-      const displaySize = { width: videoRef.current.videoWidth, height: videoRef.current.videoHeight };
-      faceapi.matchDimensions(canvas, displaySize);
+      const context = canvas.getContext('2d');
+      context.clearRect(0, 0, canvas.width, canvas.height);
 
-      const detectInterval = setInterval(async () => {
-        const videoElement = videoRef.current;
-        if (!videoElement || !modelsLoaded || !videoLoaded) {
-          return;
-        }
+      const results = resizedDetections.map(d => faceMatcher.findBestMatch(d.descriptor));
 
-        const detections = await faceapi.detectAllFaces(videoElement, new faceapi.SsdMobilenetv1Options()).withFaceLandmarks().withFaceDescriptors();
-        const resizedDetections = faceapi.resizeResults(detections, displaySize);
-        const context = canvas.getContext('2d');
-        context.clearRect(0, 0, canvas.width, canvas.height);
+      if (results.length > 0) {
+        const name = results[0].toString();
+        setDetectedName(name);
+      }
 
-        const results = resizedDetections.map(d => faceMatcher.findBestMatch(d.descriptor));
+      results.forEach((result, i) => {
+        const name = result.toString();
+        const box = resizedDetections[i].detection.box;
+        const drawBox = new faceapi.draw.DrawBox(box, { label: name });
+        drawBox.draw(canvas);
+      });
+    }, 100);
 
-        if (results.length > 0) {
-          const name = results[0].toString();
-        
-          
-          setDetectedName(name);
-        }
-
-        results.forEach((result, i) => {
-          const name = result.toString();
-          const box = resizedDetections[i].detection.box;
-          const drawBox = new faceapi.draw.DrawBox(box, { label: name });
-          drawBox.draw(canvas);
-       
-        });
-      }, 100);
-      
-
-
-
-      // Cleanup function to clear detectInterval
-      return () => {
-        clearInterval(detectInterval);
-      };
+    videoRef.current.addEventListener('pause', () => {
+      clearInterval(detectInterval);
     });
+
+    return () => {
+      clearInterval(detectInterval);
+    };
   };
 
   const loadLabeledImages = () => {
-    const labels = ['Prashant Kumar', 'Captain America', 'Tony Stark', 'Muhammad Hamza Khalid', 'Khuzaima Ansari'];
+    // const labels = ['Prashant Kumar', 'Captain America', 'Tony Stark', 'Muhammad Hamza Khalid', 'Khuzaima Ansari'];
+    const labels = ['test']
     return Promise.all(
       labels.map(async (label) => {
         const descriptions = [];
         for (let i = 1; i <= 2; i++) {
-          const img = await faceapi.fetchImage(`/src/labeled_images/${label}/${i}.jpg`);
+          const img = await faceapi.fetchImage(`server/src/assets/labeled_images/${label}/${i}.jpg`);
           const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
           descriptions.push(detections.descriptor);
         }
@@ -138,28 +142,36 @@ function DetectPeople() {
     );
   };
 
- const handleDetection = async () => {
-  if (!detectedName) return;
-  const fullName = detectedName.split(' ')[0] + ' ' + detectedName.split(' ')[1];
-  videoRef.current.pause();
+  const handleDetection = async () => {
+    if (!detectedName) return;
+    const fullName = detectedName.split(' ')[0] + ' ' + detectedName.split(' ')[1];
+    console.log()
+    videoRef.current.pause();
 
- 
-  try {
-    const response = await axios.get(`http://localhost:5000/api/getPersonDetails`, {
-      params: {
-        name: fullName
-      }
-    });
+    try {
+      const response = await axios.get(`http://localhost:5000/api/getPersonDetails`, {
+        params: {
+          name: fullName
+        }
+      });
 
-    setData(response.data);
-  } catch (error) {
-    console.error('Error fetching person details:', error);
-    setError('Error fetching person details');
-  }
-};
+      setData(response.data);
+    } catch (error) {
+      console.error('Error fetching person details:', error);
+      setError('Error fetching person details');
+    }
+  };
 
-   const handleResize = () => {
+  const handleResize = () => {
     initializeCanvas();
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const context = canvas.getContext('2d');
+      context.clearRect(0, 0, canvas.width, canvas.height);
+    }
   };
 
   return (
@@ -189,8 +201,6 @@ function DetectPeople() {
           <canvas ref={canvasRef} className="appcanvas" />
         </div>
         <button onClick={handleDetection} disabled={!detectedName}>Confirm Detection</button>
-        {nameStored && <p>Detection stored successfully!</p>}
-      
       </div>
     </div>
   );
