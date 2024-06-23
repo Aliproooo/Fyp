@@ -1,0 +1,45 @@
+/* FineData.css */
+
+.fine-data-container {
+    margin: 50px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.fine-search {
+    margin-bottom: 20px;
+}
+
+.fine-student-select {
+    margin-bottom: 20px;
+}
+
+.fine-apply {
+    border-top: 1px solid #ccc;
+    padding-top: 20px;
+    margin-top: 20px;
+}
+
+.fine-type label,
+.fine-amount label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.fine-apply-button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.fine-apply-button:hover {
+    background-color: #0056b3;
+}

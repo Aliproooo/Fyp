@@ -17,8 +17,6 @@ function App() {
   return (
     <div className="App">
       <header>
-        
-
         <div className="message">
           <div className="circle"></div>
           <img
@@ -40,7 +38,7 @@ function App() {
         <div className="navcontainer">
           <nav className="nav">
             <div className="nav-upper-options">
-              <div className="nav-option option1" onClick={() => handleMenuClick('TrainData')}>
+              <div className={`nav-option ${activePage === 'TrainData' ? 'active' : ''}`} onClick={() => handleMenuClick('TrainData')}>
                 <img
                   src="https://media.geeksforgeeks.org/wp-content/uploads/20221210182148/Untitled-design-(29).png"
                   className="nav-img"
@@ -49,7 +47,7 @@ function App() {
                 <h3>Train Data</h3>
               </div>
 
-              <div className="nav-option option2" onClick={() => handleMenuClick('DetectPeople')}>
+              <div className={`nav-option ${activePage === 'DetectPeople' ? 'active' : ''}`} onClick={() => handleMenuClick('DetectPeople')}>
                 <img
                   src="https://media.geeksforgeeks.org/wp-content/uploads/20221210183322/9.png"
                   className="nav-img"
@@ -58,7 +56,7 @@ function App() {
                 <h3>Detect People</h3>
               </div>
 
-              <div className="nav-option option3" onClick={() => handleMenuClick('FineData')}>
+              <div className={`nav-option ${activePage === 'FineData' ? 'active' : ''}`} onClick={() => handleMenuClick('FineData')}>
                 <img
                   src="https://media.geeksforgeeks.org/wp-content/uploads/20221210183320/5.png"
                   className="nav-img"
@@ -67,7 +65,7 @@ function App() {
                 <h3>Fine Data</h3>
               </div>
 
-              <div className="nav-option option4" onClick={() => handleMenuClick('GenerateReports')}>
+              <div className={`nav-option ${activePage === 'GenerateReports' ? 'active' : ''}`} onClick={() => handleMenuClick('GenerateReports')}>
                 <img
                   src="https://media.geeksforgeeks.org/wp-content/uploads/20221210183321/6.png"
                   className="nav-img"
@@ -76,7 +74,7 @@ function App() {
                 <h3>Generate Reports</h3>
               </div>
 
-              <div className="nav-option option5" onClick={() => handleMenuClick('Staff')}>
+              <div className={`nav-option ${activePage === 'Staff' ? 'active' : ''}`} onClick={() => handleMenuClick('Staff')}>
                 <img
                   src="https://media.geeksforgeeks.org/wp-content/uploads/20221210183323/10.png"
                   className="nav-img"
@@ -85,7 +83,7 @@ function App() {
                 <h3>Staff</h3>
               </div>
 
-              <div className="nav-option option6" onClick={() => handleMenuClick('StaffData')}>
+              <div className={`nav-option ${activePage === 'StaffData' ? 'active' : ''}`} onClick={() => handleMenuClick('StaffData')}>
                 <img
                   src="https://media.geeksforgeeks.org/wp-content/uploads/20221210183320/4.png"
                   className="nav-img"
@@ -103,8 +101,6 @@ function App() {
           {activePage === 'GenerateReports' && <GenerateReports />}
           {activePage === 'Staff' && <Staff />}
           {activePage === 'StaffData' && <StaffData />}
-     
-      
         </div>
       </div>
     </div>
