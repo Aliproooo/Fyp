@@ -16,38 +16,60 @@ const TrainData = () => {
   }, [webcamRef]);
 
   const handleSubmit = async () => {
-    const formData = new FormData();
-    formData.append('name', name);
-    images.forEach((image, index) => {
-      const byteString = atob(image.split(',')[1]);
-      const mimeString = image.split(',')[0].split(':')[1].split(';')[0];
-      const arrayBuffer = new ArrayBuffer(byteString.length);
-      const intArray = new Uint8Array(arrayBuffer);
-      for (let i = 0; i < byteString.length; i++) {
-        intArray[i] = byteString.charCodeAt(i);
-      }
-      const file = new Blob([arrayBuffer], { type: mimeString });
-      formData.append('images', file, `${index + 1}.jpg`);
-    });
-
-    try {
-      await axios.post('http://localhost:5000/api/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      alert('Images uploaded successfully');
-    } catch (error) {
-      console.error('Error uploading images', error);
+  const imagesFormData = new FormData();
+  images.forEach((image, index) => {
+    const byteString = atob(image.split(',')[1]);
+    const mimeString = image.split(',')[0].split(':')[1].split(';')[0];
+    const arrayBuffer = new ArrayBuffer(byteString.length);
+    const intArray = new Uint8Array(arrayBuffer);
+    for (let i = 0; i < byteString.length; i++) {
+      intArray[i] = byteString.charCodeAt(i);
     }
+    const file = new Blob([arrayBuffer], { type: mimeString });
+    imagesFormData.append('images', file, `${index + 1}.jpg`);
+  });
 
-    // Reset form
-    setName('');
-    setId('');
-    setSection('');
-    setType('');
-    setImages([]);
-  };
+  const dataFormData = new FormData();
+  dataFormData.append('name', name);
+  dataFormData.append('id', id);
+  dataFormData.append('section', section);
+  dataFormData.append('type', type);
+
+  try {
+    // Upload images
+    await axios.post('http://localhost:5000/api/upload', imagesFormData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    alert('Images uploaded successfully');
+  } catch (error) {
+    console.error('Error uploading images', error);
+    alert('Error uploading images');
+    return; // Exit early on error
+  }
+
+  try {
+    // Upload data
+    await axios.post('http://localhost:5000/api/uploadTrainData', dataFormData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    alert('Data uploaded successfully');
+  } catch (error) {
+    console.error('Error uploading data', error);
+    alert('Error uploading data');
+  }
+
+  // Reset form
+  setName('');
+  setId('');
+  setSection('');
+  setType('');
+  setImages([]);
+};
+
 
   return (
     <div style={{ display: 'flex' }}>

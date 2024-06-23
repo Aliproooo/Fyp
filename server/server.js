@@ -13,7 +13,7 @@ app.use(cors());
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "1234",
+  password: "",
   database: "face_detection",
 });
 
@@ -28,14 +28,14 @@ db.connect((err) => {
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = `src/assets/labeled_images/${req.body.name}`;
+    const dir = `src/labeled_images/${req.body.name}`;
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    const dir = `src/assets/labeled_images/${req.body.name}`;
+    const dir = `fsrc/labeled_images/${req.body.name}`;
     fs.readdir(dir, (err, files) => {
       if (err) {
         cb(err);
@@ -60,7 +60,7 @@ const upload = multer({ storage: storage });
 // Endpoint to fetch person details by name
 app.get("/api/getPersonDetails", (req, res) => {
   const { name } = req.query;
-  const sql = "SELECT * FROM data WHERE Name = ?";
+  const sql = "SELECT * FROM traindata WHERE Name = ?";
 
   db.query(sql, [name], (err, result) => {
     if (err) {
@@ -97,4 +97,24 @@ app.post("/api/upload", upload.array("images", 12), (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+
+// Endpoint to handle form submission
+app.post('/api/uploadTrainData', upload.array('images', 10), (req, res) => {
+  const { name, id, section, type } = req.body;
+ 
+
+  // Insert data into MySQL
+  const sql = 'INSERT INTO traindata (name, id, section, type) VALUES (?, ?, ?, ?)';
+  db.query(sql, [name, id, section, type], (err, result) => {
+    if (err) {
+      console.error('Error inserting data into MySQL:', err);
+      res.status(500).send('Error uploading data');
+    } else {
+      console.log('Data inserted into MySQL:', result);
+
+     
+    }
+  });
 });

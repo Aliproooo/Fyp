@@ -9,7 +9,11 @@ function DetectPeople() {
   const [detectedName, setDetectedName] = useState('');
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
-  const [data, setData] = useState(null);
+  const [data, setData] = useState({
+    Name: 'unknown',
+    StudentID: 'unknown',
+    Section: 'unknown'
+  });
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -61,8 +65,11 @@ function DetectPeople() {
       faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
       faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
       faceapi.nets.faceExpressionNet.loadFromUri('/models'),
-      faceapi.nets.ssdMobilenetv1.loadFromUri('/models')
+      faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+
     ]).then(() => {
+      
+
       setModelsLoaded(true);
     }).catch((err) => {
       setError(`Error loading models: ${err.message}`);
@@ -126,25 +133,60 @@ function DetectPeople() {
     };
   };
 
-  const loadLabeledImages = () => {
-    // const labels = ['Prashant Kumar', 'Captain America', 'Tony Stark', 'Muhammad Hamza Khalid', 'Khuzaima Ansari'];
-    const labels = ['test']
-    return Promise.all(
+ const loadLabeledImages = async () => {
+  const labels = ['Ali', 'test'];
+  try {
+    const labeledDescriptors = await Promise.all(
       labels.map(async (label) => {
         const descriptions = [];
-        for (let i = 1; i <= 2; i++) {
-          const img = await faceapi.fetchImage(`server/src/assets/labeled_images/${label}/${i}.jpg`);
-          const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
-          descriptions.push(detections.descriptor);
+        for (let i = 1; i <= 3; i++) {
+          const imagePath = `server/src/labeled_images/${label}/${i}.jpg`;
+          console.log(`Loading image: ${imagePath}`);
+          try {
+            const img = await faceapi.fetchImage(imagePath);
+            const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+            if (detections) {
+              descriptions.push(detections.descriptor);
+            } else {
+              console.warn(`No face detected in ${imagePath}`);
+              // You can skip this image or handle it in some way
+              // For example, push a default descriptor or skip adding to descriptions array
+            }
+          } catch (error) {
+            console.error(`Error processing ${imagePath}: ${error.message}`);
+            // Handle specific errors related to image loading or face detection
+            // You may want to skip the image entirely or provide a default descriptor
+          }
         }
-        return new faceapi.LabeledFaceDescriptors(label, descriptions);
+        // Ensure descriptions array is not empty before creating LabeledFaceDescriptors
+        if (descriptions.length > 0) {
+          return new faceapi.LabeledFaceDescriptors(label, descriptions);
+        } else {
+          console.warn(`No valid descriptors found for ${label}. Skipping.`);
+          return null; // Return null or handle this case based on your application's needs
+        }
       })
     );
-  };
+
+    // Filter out null values (if any) from labeledDescriptors array
+    const filteredDescriptors = labeledDescriptors.filter(descriptor => descriptor !== null);
+
+    // Ensure we log the filteredDescriptors to verify what's being loaded
+    console.log("Labeled Descriptors:", filteredDescriptors);
+
+    return filteredDescriptors;
+  } catch (error) {
+    console.error(`Error loading labeled images: ${error.message}`);
+    throw error; // Rethrow the error to indicate failure in loading labeled images
+  }
+};
+
 
   const handleDetection = async () => {
     if (!detectedName) return;
-    const fullName = detectedName.split(' ')[0] + ' ' + detectedName.split(' ')[1];
+    const fullName = detectedName.split(' ')[0];
+
+
     console.log()
     videoRef.current.pause();
 
@@ -180,13 +222,13 @@ function DetectPeople() {
         <div className='card'>
           <h2>Person Detected</h2>
           <div className='image-container'>
-            <img src={`src/labeled_images/${data.Name}/1.jpg`} alt="Person" className='image' />
+            <img src={`server/src/labeled_images/${data.Name}/1.jpg`} alt="Person" className='image' />
           </div>
           <div className='field'>
             <span className='label'>Name:</span> {data.Name}
           </div>
           <div className='field'>
-            <span className='label'>Student ID:</span> {data.StudentID}
+            <span className='label'>Student ID:</span> {data.ID}
           </div>
           <div className='field'>
             <span className='label'>Section:</span> {data.Section}
