@@ -134,7 +134,7 @@ function DetectPeople() {
   };
 
  const loadLabeledImages = async () => {
-  const labels = ['Ali', 'test'];
+  const labels = ['Hamza Khalid',"Hamza"];
   try {
     const labeledDescriptors = await Promise.all(
       labels.map(async (label) => {
@@ -184,7 +184,12 @@ function DetectPeople() {
 
   const handleDetection = async () => {
     if (!detectedName) return;
-    const fullName = detectedName.split(' ')[0];
+    console.log(detectedName)
+
+    const cleanedName = detectedName.replace(/[^a-zA-Z ]/g, ''); // Remove all non-alphabetic characters and spaces
+    const fullName = cleanedName.split(' ')[0] +" "+ cleanedName.split(' ')[1] ; // Split the cleaned name and take the first word
+
+    console.log(fullName); // Outputs: John
 
 
     console.log()
